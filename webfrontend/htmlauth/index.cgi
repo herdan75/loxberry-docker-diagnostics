@@ -3,47 +3,73 @@
 use strict;
 use warnings;
 
-use CGI;
+use CGI qw(escapeHTML);
 use LoxBerry::System;
 use LoxBerry::Web;
 
-# Plugin-Version auslesen
+# ---------------------------------------------------------
+# Plugin-Version
+# ---------------------------------------------------------
 my $version = LoxBerry::System::pluginversion();
 
-# LoxBerry-IP automatisch ermitteln
-my $ip = LoxBerry::System::lbhostname();
+# ---------------------------------------------------------
+# Saubere IP-Ermittlung (robust für ARM / Multi-NIC)
+# ---------------------------------------------------------
+my $ip = LoxBerry::System::get_localip();
+$ip ||= `hostname -I 2>/dev/null | awk '{print $1}'`;
+chomp($ip);
+$ip ||= "localhost";
 
-# HTML-Header laden
+# ---------------------------------------------------------
+# HTML Header
+# ---------------------------------------------------------
 our $htmlhead = "<link rel='stylesheet' href='docker.css'>";
 LoxBerry::Web::lbheader("Docker", "https://www.docker.com", undef);
 
-# ---------------------------------------------------------
-# Portainer-Status prüfen
-# ---------------------------------------------------------
-my $portainer_running = `docker ps --filter "name=portainer" --format "{{.Status}}"`;
+# =========================================================
+# PORTAINER STATUS (robust via docker inspect)
+# =========================================================
+my $portainer_running = `docker inspect -f '{{.State.Running}}' portainer 2>/dev/null`;
 chomp($portainer_running);
 
-my $status_text  = $portainer_running ? "Läuft" : "Gestoppt";
-my $status_color = $portainer_running ? "#28a745" : "#dc3545";
+my $is_running = ($portainer_running && $portainer_running eq "true") ? 1 : 0;
 
-# ---------------------------------------------------------
-# Docker-Containerliste abrufen
-# ---------------------------------------------------------
-my @containers = `docker ps --format "{{.Names}}|{{.Status}}"`;
+my $status_text  = $is_running ? "Läuft" : "Gestoppt";
+my $status_color = $is_running ? "#28a745" : "#dc3545";
 
-# ---------------------------------------------------------
-# HTML-Ausgabe
-# ---------------------------------------------------------
-print <<END_HTML;
+# =========================================================
+# DOCKER CONTAINER LIST (mit Timeout Schutz)
+# =========================================================
+my @containers;
+
+eval {
+    local $SIG{ALRM} = sub { die "timeout\n" };
+    alarm(2);
+
+    @containers = `docker ps --format "{{.Names}}|{{.Status}}" 2>/dev/null`;
+
+    alarm(0);
+};
+alarm(0);
+
+# =========================================================
+# Portainer URL sicher bauen
+# =========================================================
+my $portainer_url = ($ip && $ip ne "localhost")
+    ? "http://$ip:9000"
+    : "#";
+
+# =========================================================
+# HTML OUTPUT
+# =========================================================
+print <<HTML;
 
 <div class="card">
     <h1>Docker / Portainer</h1>
 
-    <p>
-        Verwaltung deiner Docker-Container über Portainer.
-    </p>
+    <p>Verwaltung deiner Docker-Container über Portainer.</p>
 
-    <a class="btn" href="http://$ip:9000" target="_blank">
+    <a class="btn" href="$portainer_url" target="_blank">
         Portainer öffnen
     </a>
 
@@ -60,12 +86,12 @@ print <<END_HTML;
 
     <p style="margin-top:20px; color:#666;">
         Plugin-Version: $version<br>
-        Portainer-Adresse: http://$ip:9000
+        Portainer-Adresse: $portainer_url
     </p>
 </div>
 
 <!-- ---------------------------------------------------------
-     Diagnose-Button
+     Diagnose
 ---------------------------------------------------------- -->
 
 <div class="card">
@@ -73,84 +99,65 @@ print <<END_HTML;
     <h2>Docker Systemdiagnose</h2>
 
     <p>
-        Analysiert Docker-Version,
-        Paketquellen,
-        Update-Status
-        und mögliche Konflikte.
+        Analysiert Docker-Version, Paketquellen, Update-Status und mögliche Konflikte.
     </p>
 
     <form action="diagnose.cgi" method="get" style="margin-top:10px;">
-
-        <button
-            type="submit"
-            class="btn"
-            style="background:#ffc107; color:#000;"
-        >
+        <button type="submit" class="btn" style="background:#ffc107; color:#000;">
             Docker Systemdiagnose anzeigen
         </button>
-
     </form>
 
 </div>
 
 <!-- ---------------------------------------------------------
-     Docker Container Tabelle
+     Container Tabelle
 ---------------------------------------------------------- -->
 
 <div class="card">
 
     <h2>Docker Container</h2>
 
-    <table style="
-        margin:0 auto;
-        border-collapse:collapse;
-        width:80%;
-    ">
+    <table style="margin:0 auto; border-collapse:collapse; width:80%;">
 
         <tr style="background:#0078d4; color:white;">
             <th style="padding:10px;">Name</th>
             <th style="padding:10px;">Status</th>
         </tr>
 
-END_HTML
+HTML
 
-# Tabellenzeilen erzeugen
+# =========================================================
+# TABLE OUTPUT SAFE
+# =========================================================
 foreach my $line (@containers) {
 
     chomp($line);
 
     my ($name, $status) = split(/\|/, $line);
 
-    print <<END_ROW;
+    $name   = escapeHTML($name // "");
+    $status = escapeHTML($status // "");
 
+    print <<ROW;
         <tr>
-            <td style="
-                padding:10px;
-                border-bottom:1px solid #ccc;
-            ">
+            <td style="padding:10px; border-bottom:1px solid #ccc;">
                 $name
             </td>
-
-            <td style="
-                padding:10px;
-                border-bottom:1px solid #ccc;
-            ">
+            <td style="padding:10px; border-bottom:1px solid #ccc;">
                 $status
             </td>
         </tr>
-
-END_ROW
-
+ROW
 }
 
-# Tabelle schließen
-print <<END_HTML;
+print <<HTML;
 
     </table>
 
 </div>
 
-END_HTML
+HTML
 
 # Footer
 LoxBerry::Web::lbfooter();

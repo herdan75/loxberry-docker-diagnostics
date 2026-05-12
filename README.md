@@ -1,16 +1,9 @@
-### **LoxBerry Plugin: Docker \& Portainer (Modernisierte Version)**
+# **LoxBerry Plugin: Docker \& Portainer (Modernisierte Version)**
 
 Dieses Plugin basiert auf dem ursprünglichen LoxBerry Docker Plugin von Michael Miklis (michaelmiklis)
-
 und wurde umfangreich modernisiert, aktualisiert und für LoxBerry 3.x angepasst.
-
-
-
 Das Plugin installiert die Docker‑Engine auf dem LoxBerry und richtet automatisch
-
 Portainer CE für die grafische Verwaltung von Containern ein.
-
-
 
 Es integriert Docker sauber in die LoxBerry‑Weboberfläche und bietet ein modernes Dashboard mit:
 
@@ -23,13 +16,43 @@ Es integriert Docker sauber in die LoxBerry‑Weboberfläche und bietet ein mode
 
 
 
+## 📸 Screenshots
+
+### 🔧 Portainer starten
+Über das Docker- Plugin kann Portainer direkt gestartet werden.  
+Der Status zeigt an, ob der Portainer‑Container läuft.
+
+<img src="https://github.com/user-attachments/assets/f8516151-51a1-4d6a-8317-4bb5df7a5616" alt="Portainer Start" style="max-width: 700px; width: 40%; height: auto;" />
+
+Anmeldeseite öffnet sich.
+
+<img src="https://github.com/user-attachments/assets/4747a8ba-2799-4b46-ab41-4f84b055f431" alt="Portainer Login" style="max-width: 350px; width: 20%; height: auto;" />
+
+### 🔧 Docker‑Systemdiagnose
+Die neue Diagnose‑Funktion (ab Version 2.2.0) analysiert
+* Docker‑Version  
+* Installationsart (docker.io / docker‑ce / Script)  
+* Architektur & Kernel  
+* Paketquellen  
+* Konflikte (z. B. Mischinstallation)  
+* Update‑Status  
+* Handlungsempfehlungen
+<img src="https://github.com/user-attachments/assets/f6a2ad32-65dd-40c5-98cb-82e7f22a8328" alt="Docker Diagnose Übersicht" style="max-width: 750px; width: 40%; height: auto;" />
+
+Beispiel für erkannte Mischinstallation auf ARM64:
+
+<img src="https://github.com/user-attachments/assets/188b5cd8-68af-41ad-85cb-560900c0df63" alt="Docker Konflikt Analyse" style="max-width: 750px; width: 40%; height: auto;" />
+
+### 🔧 Übersicht der Docker- Container
+Übersicht der laufenden Container und Status:
+
+<img src="https://github.com/user-attachments/assets/f25d65a4-82fb-4c15-8eca-381b87ab799f" alt="Docker Container Liste" style="max-width: 750px; width: 40%; height: auto;" />
+
+## ✨ Features
 
 
-### ✨ Features
 
-
-
-##### 🔥 Neu in Version 2.2.0
+### 🔥 Neu in Version 2.2.0
 
 * Docker-Systemdiagnose integriert
 * Erkennung der installierten Docker-Version
@@ -50,7 +73,7 @@ Es integriert Docker sauber in die LoxBerry‑Weboberfläche und bietet ein mode
 
 
 
-##### 🔥 Neu in der modernisierten Version (2.1.x → 2.2.x)
+### 🔥 Neu in der modernisierten Version (2.1.x → 2.2.x)
 
 * Vollständig kompatibel mit LoxBerry 3.x
 * Entfernung der Template‑Engine (keine HTML::Template‑Fehler mehr)
@@ -65,7 +88,7 @@ Es integriert Docker sauber in die LoxBerry‑Weboberfläche und bietet ein mode
 
 
 
-##### Standard‑Features (vom Original übernommen)
+### Standard‑Features (vom Original übernommen)
 
 * Automatische Installation der Docker‑Engine
 * Automatische Installation \& Start von Portainer CE
@@ -74,7 +97,7 @@ Es integriert Docker sauber in die LoxBerry‑Weboberfläche und bietet ein mode
 
 
 
-##### 📦 Installation
+### 📦 Installation
 
 1\. ZIP herunterladen **oder Installation über den LoxBerry Plugin Manager (empfohlen)**
 
@@ -91,14 +114,14 @@ http://your-loxberry.local:9000
 
 
 
-##### 🧩 Voraussetzungen
+### 🧩 Voraussetzungen
 
 * LoxBerry 3.x
 * Internetzugang für Docker‑Installation
 
 
 
-##### 🛠 Troubleshooting \& Hinweise
+### 🛠 Troubleshooting \& Hinweise
 
 Dieses Plugin installiert Docker und Portainer, bietet aber keinen Support für Docker‑Container selbst.
 
@@ -125,7 +148,7 @@ In solchen Fällen wird die Verwendung des offiziellen Docker-Installationsscrip
 https://get.docker.com (official Docker install script)
 
 
-##### 🔧 Technische Hinweise
+### 🔧 Technische Hinweise
 
 
 
@@ -139,11 +162,11 @@ Empfehlungen und Hinweise basieren auf der erkannten Systemumgebung und Paketkon
 
 
 
-### 🆕 Change‑Log
+## 🆕 Change‑Log
 
 
 
-##### 2026‑05‑12 – Release 2.2.0
+### 2026‑05‑12 – Release 2.2.0
 
 * Neue Docker‑Systemdiagnose integriert
 * diagnose.cgi hinzugefügt
@@ -154,7 +177,7 @@ Empfehlungen und Hinweise basieren auf der erkannten Systemumgebung und Paketkon
 
 
 
-##### 2026‑05‑12 – Release 2.1.1 (Modernisierte Version)
+### 2026‑05‑12 – Release 2.1.1 (Modernisierte Version)
 
 * LB3‑kompatible Oberfläche
 * Entfernung der Template‑Engine
@@ -169,45 +192,45 @@ Empfehlungen und Hinweise basieren auf der erkannten Systemumgebung und Paketkon
 
 
 
-##### 2022‑12‑22 – Release 2.1.0
+### 2022‑12‑22 – Release 2.1.0
 
 * Auto‑Update‑Support
 
 
 
-##### 2022‑12‑13 – Release 2.0.2
+### 2022‑12‑13 – Release 2.0.2
 
 * Wechsel zu portainer/portainer-ce:latest
 
 
 
-##### 2019‑12‑31 – Release 2.0.1
+### 2019‑12‑31 – Release 2.0.1
 
 * Support für LoxBerry 2.0.0.4
 * Portainer 1.23.0
 
 
 
-##### 2018‑11‑16 – Release 1.1.0
+### 2018‑11‑16 – Release 1.1.0
 
 * Größeres iFrame
 * Portainer 1.19.1
 
 
 
-##### 2018‑08‑27 – Release 1.0.0
+### 2018‑08‑27 – Release 1.0.0
 
 * Initial Release
 
 
 
-### ⚠️ Known Issues
+## ⚠️ Known Issues
 
 Aktuell keine reproduzierbaren Probleme bekannt.
 
 
 
-### 📝 Lizenz
+## 📝 Lizenz
 
 
 
@@ -237,7 +260,7 @@ Copyright © 2026 Daniel Hermann
 
 
 
-### 🙏 Credits
+## 🙏 Credits
 
 
 

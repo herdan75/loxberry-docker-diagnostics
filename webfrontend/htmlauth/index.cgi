@@ -59,7 +59,7 @@ print qq{
 print "</div>";
 
 # =========================================================
-# DIAGNOSE / ANALYSE
+# DIAGNOSE CARD
 # =========================================================
 print "<div class='card'>";
 
@@ -71,18 +71,12 @@ print qq{
 <a href="diagnose.cgi" class="btn" style="background:#ffc107;color:#000;">
     Diagnose starten
 </a>
-
-<a href="/admin/plugins/docker/index.cgi"
-   class="btn"
-   style="background:#6c757d;margin-left:10px;">
-    Docker Plugin
-</a>
 };
 
 print "</div>";
 
 # =========================================================
-# CONTAINER LIST
+# CONTAINER LIST (FAST ENGINE)
 # =========================================================
 my @containers = `docker ps --format "{{.Names}}|{{.Status}}|{{.Ports}}" 2>/dev/null`;
 chomp @containers;
@@ -116,7 +110,47 @@ sub status_chip {
 }
 
 # =========================================================
-# ROWS
+# PORT PARSER (ROBUST + MULTI PORT + LXC DOCKER FORMAT)
+# =========================================================
+sub parse_ports {
+    my ($ports) = @_;
+
+    return "n/a" if !$ports;
+
+    my @urls;
+
+    # Format 1: 0.0.0.0:8555->8555/tcp
+    while ($ports =~ /0\.0\.0\.0:(\d+)->/g) {
+        my $port = $1;
+        my $proto = ($port == 443) ? "https" : "http";
+        push @urls, "$proto://$host:$port";
+    }
+
+    # Format 2: :::8555->8555/tcp oder :8555->8555
+    while ($ports =~ /:(\d+)->/g) {
+        my $port = $1;
+        my $proto = ($port == 443) ? "https" : "http";
+        push @urls, "$proto://$host:$port";
+    }
+
+    # Remove duplicates
+    my %seen;
+    @urls = grep { !$seen{$_}++ } @urls;
+
+    if (!@urls) {
+        return "n/a";
+    }
+
+    my $out = "";
+    foreach my $u (@urls) {
+        $out .= qq{<a href="$u" target="_blank">$u</a><br>};
+    }
+
+    return $out;
+}
+
+# =========================================================
+# LOOP
 # =========================================================
 foreach my $line (@containers) {
 
@@ -126,29 +160,7 @@ foreach my $line (@containers) {
     $status = escapeHTML($status || "");
     $ports  = $ports || "";
 
-    my $url_html = "";
-
-    # PORT DETECTION
-    if ($ports =~ /0\.0\.0\.0:(\d+)->/) {
-
-        my $port = $1;
-        my $proto = ($port == 443) ? "https" : "http";
-        my $url   = "$proto://$host:$port";
-
-        $url_html = qq{<a href="$url" target="_blank">$url</a>};
-    }
-    elsif ($ports =~ /:(\d+)->/) {
-
-        my $port = $1;
-        my $proto = ($port == 443) ? "https" : "http";
-        my $url   = "$proto://$host:$port";
-
-        $url_html = qq{<a href="$url" target="_blank">$url</a>};
-    }
-
-    if (!$url_html) {
-        $url_html = "<span style='color:#888;font-style:italic;'>n/a</span>";
-    }
+    my $url_html = parse_ports($ports);
 
     print "<tr>";
 

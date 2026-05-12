@@ -1,14 +1,94 @@
 <!DOCTYPE html>
-<html>
-        <head>
-                <script>
-                        var host = window.location.hostname;
-                        var proto = window.location.protocol;
-                        var port = "9000";
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <title>Portainer Redirect</title>
 
-                        var url = proto + "//" + host + ":" + port;
+    <meta http-equiv="cache-control" content="no-cache">
 
-                        window.location = url;
-                </script>
-        </head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            text-align: center;
+            padding-top: 60px;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            margin: auto;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 12px 20px;
+            background: #0078d4;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+        }
+
+        a:hover {
+            background: #005fa3;
+        }
+    </style>
+
+    <script>
+        (function () {
+
+            var host = window.location.hostname;
+            var port = "9000";
+
+            // nur http/https zulassen
+            var proto = (window.location.protocol === "https:") ? "https:" : "http:";
+
+            var url = proto + "//" + host + ":" + port;
+
+            // speichern für fallback
+            window._portainerUrl = url;
+
+            // sofortige Weiterleitung
+            window.location.replace(url);
+
+        })();
+    </script>
+</head>
+
+<body>
+
+<div class="box">
+
+    <h2>Weiterleitung zu Portainer</h2>
+
+    <p>Du wirst automatisch weitergeleitet…</p>
+
+    <p>Falls nicht, klicke hier:</p>
+
+    <a id="manualLink" href="#">Portainer öffnen</a>
+
+</div>
+
+<script>
+    (function () {
+        document.getElementById("manualLink").href =
+            window._portainerUrl || (window.location.protocol + "//" + window.location.hostname + ":9000");
+    })();
+</script>
+
+<noscript>
+    <div class="box">
+        <p>JavaScript ist deaktiviert.</p>
+        <p>
+            <a href="/">Portainer öffnen</a>
+        </p>
+    </div>
+</noscript>
+
+</body>
 </html>

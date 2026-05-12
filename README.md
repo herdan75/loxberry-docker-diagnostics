@@ -76,7 +76,7 @@ Es integriert Docker sauber in die LoxBerry‑Weboberfläche und bietet ein mode
 
 ##### 📦 Installation
 
-1\. ZIP herunterladen
+1\. ZIP herunterladen **oder Installation über den LoxBerry Plugin Manager (empfohlen)**
 
 2\. LoxBerry Webinterface öffnen
 
@@ -86,11 +86,10 @@ Es integriert Docker sauber in die LoxBerry‑Weboberfläche und bietet ein mode
 
 5\. Plugin öffnen → Portainer starten
 
-
-
 Nach erfolgreicher Installation ist Portainer erreichbar unter:
 
-http://<loxberry-ip>:9000
+Portainer is available at:
+http://<LoxBerry IP>:9000
 
 
 
@@ -111,7 +110,7 @@ Für Plugin‑Feedback oder Fehlerberichte kann weiterhin der ursprüngliche Lox
 
 
 
-https://www.loxforum.com/forum/projektforen/loxberry/plugins/165754-plugin-docker-und-portainer-io
+LoxForum Thread: https://www.loxforum.com/forum/projektforen/loxberry/plugins/165754-plugin-docker-und-portainer-io
 
 
 
@@ -125,8 +124,7 @@ In solchen Fällen wird die Verwendung des offiziellen Docker-Installationsscrip
 
 
 
-https://get.docker.com
-
+https://get.docker.com (official Docker install script)
 
 
 ##### 🔧 Technische Hinweise

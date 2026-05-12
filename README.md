@@ -87,9 +87,7 @@ Es integriert Docker sauber in die LoxBerry‑Weboberfläche und bietet ein mode
 5\. Plugin öffnen → Portainer starten
 
 Nach erfolgreicher Installation ist Portainer erreichbar unter:
-
-Portainer is available at:
-http://<LoxBerry IP>:9000
+http://your-loxberry.local:9000
 
 
 

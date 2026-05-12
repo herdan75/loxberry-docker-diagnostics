@@ -130,7 +130,7 @@ print qq{
 <th>Name</th>
 <th>Status</th>
 <th>Service URL</th>
-<th>Aktion</th>
+<th>Service URL zuordnen</th>
 </tr>
 };
 

@@ -106,7 +106,10 @@ print "<div class='card'>";
 print qq{
 <h2>Docker Systemdiagnose</h2>
 
-<p>Analyse bleibt verfügbar (Version / Status / System).</p>
+<p>
+Systemdiagnose zur Validierung der Docker-Installation (Version, Pakete,
+Konflikte und Systemzustand). Keine automatische Port-Erkennung.
+</p>
 
 <a href="diagnose.cgi" class="btn" style="background:#ffc107;color:#000;">
     Diagnose starten

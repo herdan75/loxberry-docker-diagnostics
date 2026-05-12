@@ -13,42 +13,37 @@ print "<div class='card'>";
 print "<h1>Docker Systemdiagnose (Intelligent Pro)</h1>";
 
 # ---------------------------------------------------------
-# MINI HINWEIS (klein & dezent)
+# INFO
 # ---------------------------------------------------------
-
 print qq{
 <div class="analysis-info-small">
-    Die Docker-Diagnose prüft System, Installation und Paketquellen.<br>
-    Dieser Vorgang kann einige Sekunden dauern.<br>
-    Bitte warten bis Daten erscheinen.
+    Docker Systemanalyse wird durchgeführt.<br>
+    Bitte kurz warten...
 </div>
 };
 
 # ---------------------------------------------------------
-# SYSTEM
+# SYSTEM INFO
 # ---------------------------------------------------------
-
-my $arch   = `uname -m 2>&1`; chomp $arch;
-my $kernel = `uname -r 2>&1`; chomp $kernel;
+my $arch   = `uname -m 2>/dev/null`; chomp $arch;
+my $kernel = `uname -r 2>/dev/null`; chomp $kernel;
 
 # ---------------------------------------------------------
-# DOCKER VERSION
+# DOCKER VERSION (robuster FIX)
 # ---------------------------------------------------------
-
-my $docker_version = `docker --version 2>&1`;
+my $docker_version = `docker --version 2>/dev/null || true`;
 chomp $docker_version;
 $docker_version ||= "nicht installiert";
 
 # ---------------------------------------------------------
-# INSTALLATION
+# INSTALLATION DETECTION
 # ---------------------------------------------------------
-
-my $repo_file = `ls /etc/apt/sources.list.d/ 2>/dev/null | grep docker`;
+my $repo_file = `grep -l docker /etc/apt/sources.list.d/* 2>/dev/null`;
 chomp $repo_file;
 
 my $install_type = "Unbekannt";
 
-if ($repo_file =~ /docker/) {
+if ($repo_file) {
     $install_type = "APT Repository (docker-ce)";
 }
 elsif ($docker_version =~ /build/) {
@@ -62,72 +57,61 @@ else {
 }
 
 # ---------------------------------------------------------
-# KONFLIKTE (KLAR & EINDUDEUTIG)
+# CONFLICT CHECK
 # ---------------------------------------------------------
-
-my $docker_io = `dpkg -l | grep docker.io 2>/dev/null`;
-my $docker_ce = `dpkg -l | grep docker-ce 2>/dev/null`;
+my $docker_io = `dpkg -l docker.io 2>/dev/null`;
+my $docker_ce = `dpkg -l docker-ce 2>/dev/null`;
 
 my $conflict_state = "OK";
 my $conflict_text  = "Keine Konflikte erkannt";
 
 if ($docker_io && $docker_ce) {
-
     $conflict_state = "CRITICAL";
     $conflict_text  = "KRITISCH: docker.io + docker-ce installiert";
-
 }
 elsif ($docker_io) {
-
     $conflict_state = "WARNING";
     $conflict_text  = "docker.io installiert (Debian Version)";
-
 }
 elsif ($docker_ce) {
-
     $conflict_state = "OK";
     $conflict_text  = "docker-ce installiert (empfohlen)";
-
 }
 else {
-
     $conflict_state = "UNKNOWN";
     $conflict_text  = "Docker Installation nicht eindeutig erkannt";
 }
 
 # ---------------------------------------------------------
-# SUPPORT
+# ARCH SUPPORT
 # ---------------------------------------------------------
-
 my $support_status = "Unbekannt";
 
 if ($arch =~ /x86_64/) {
     $support_status = "x86_64 – vollständig unterstützt";
 }
-elsif ($arch =~ /aarch64|arm64/) {
-    $support_status = "ARM64 – get.docker.com empfohlen";
+elsif ($arch =~ /aarch64|arm64|meson64/) {
+    $support_status = "ARM64 / meson64 – get.docker.com empfohlen";
 }
 else {
-    $support_status = "Spezielle Architektur (z. B. meson64)";
+    $support_status = "Spezielle Architektur";
 }
 
 # ---------------------------------------------------------
 # ROOT CAUSE
 # ---------------------------------------------------------
-
 my $root_cause = "Keine Probleme erkannt";
 
 if ($conflict_state eq "CRITICAL") {
-    $root_cause = "Mischinstallation erkannt";
+    $root_cause = "Mischinstallation (docker.io + docker-ce)";
 }
-elsif ($arch =~ /aarch64|arm64/) {
-    $root_cause = "ARM64 System – apt nicht empfohlen";
+elsif ($arch =~ /aarch64|arm64|meson64/) {
+    $root_cause = "ARM64 System – apt Installation kritisch";
 }
 
 # ---------------------------------------------------------
-# ACTION
+# ACTION ENGINE
 # ---------------------------------------------------------
-
 my $action = "OK";
 
 if ($conflict_state eq "CRITICAL") {
@@ -141,24 +125,15 @@ elsif ($conflict_state eq "WARNING") {
 }
 
 # ---------------------------------------------------------
-# EMPFEHLUNG
+# RECOMMENDATION
 # ---------------------------------------------------------
-
 my $recommendation = "";
 
-if ($action eq "REINSTALL") {
+if ($action eq "REINSTALL" || $action eq "INSTALL") {
 
     $recommendation = qq{
-<b>Empfehlung: Bereinigung erforderlich</b><br><br>
-Mischinstallation erkannt.<br><br>
-<code>curl -fsSL https://get.docker.com | sh</code>
-    };
-
-}
-elsif ($action eq "INSTALL") {
-
-    $recommendation = qq{
-<b>Docker nicht installiert</b><br><br>
+<b>Empfehlung</b><br><br>
+Docker Installation über offizielles Script:<br><br>
 <code>curl -fsSL https://get.docker.com | sh</code>
     };
 
@@ -167,7 +142,7 @@ elsif ($action eq "CHECK") {
 
     $recommendation = qq{
 <b>Hinweis</b><br><br>
-docker.io ist installiert, kein kritischer Fehler.
+docker.io vorhanden – kein kritischer Fehler.
     };
 
 }
@@ -182,7 +157,6 @@ Keine Aktion erforderlich.
 # ---------------------------------------------------------
 # OUTPUT
 # ---------------------------------------------------------
-
 print "<h3>System</h3>";
 print "<pre>Architektur: $arch\nKernel: $kernel</pre>";
 
@@ -219,7 +193,6 @@ print "<div class='diagnose-section'>$recommendation</div>";
 # ---------------------------------------------------------
 # BUTTONS
 # ---------------------------------------------------------
-
 print qq{
 <div style="text-align:center; margin:25px;">
 

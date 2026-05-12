@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# postinstall.sh – ausgeführt nach Installation/Update
-# Läuft als root
+# =========================================================
+# LoxBerry Docker + Portainer Plugin (FINAL SAFE VERSION)
+# =========================================================
+
+set -e
 
 COMMAND=$0
 PTEMPDIR=$1
@@ -10,60 +13,103 @@ PDIR=$3
 PVERSION=$4
 PTEMPPATH=$6
 
-PCGI=$LBPCGI/$PDIR
-PHTML=$LBPHTML/$PDIR
-PTEMPL=$LBPTEMPL/$PDIR
-PDATA=$LBPDATA/$PDIR
-PLOG=$LBPLOG/$PDIR
-PCONFIG=$LBPCONFIG/$PDIR
-PSBIN=$LBPSBIN/$PDIR
-PBIN=$LBPBIN/$PDIR
-
 echo "<INFO> Plugin installiert: $PDIR Version $PVERSION"
+
+# =========================================================
+# LoxBerry Pfade (nur Info)
+# =========================================================
 echo "<INFO> Pluginpfade:"
-echo "<INFO> CGI: $PCGI"
-echo "<INFO> HTML: $PHTML"
-echo "<INFO> Template: $PTEMPL"
-echo "<INFO> Data: $PDATA"
-echo "<INFO> Log: $PLOG"
-echo "<INFO> Config: $PCONFIG"
+echo "<INFO> CGI: $LBPCGI/$PDIR"
+echo "<INFO> HTML: $LBPHTML/$PDIR"
+echo "<INFO> Template: $LBPTEMPL/$PDIR"
+echo "<INFO> Data: $LBPDATA/$PDIR"
+echo "<INFO> Log: $LBPLOG/$PDIR"
+echo "<INFO> Config: $LBPCONFIG/$PDIR"
 
-# Docker installieren, falls nicht vorhanden
+# =========================================================
+# DOCKER INSTALL (NUR FALLS FEHLT)
+# =========================================================
 if ! command -v docker >/dev/null 2>&1; then
-    echo "<INFO> Docker nicht gefunden – Installation wird gestartet"
-    curl -fsSL https://get.docker.com -o get-docker.sh
-    sh get-docker.sh
-    usermod -aG docker loxberry
-else
-    echo "<OK> Docker ist bereits installiert"
-fi
 
-# Portainer prüfen
-container=$(docker ps --filter ancestor=portainer/portainer-ce:latest --filter name=portainer -q)
+    echo "<INFO> Docker nicht gefunden → Installation startet"
 
-if [ -z "$container" ]; then
-    echo "<INFO> Portainer läuft nicht – wird gestartet"
+    curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
+    sh /tmp/get-docker.sh
+    rm -f /tmp/get-docker.sh
 
-    # alten Container entfernen
-    if docker ps -a --format '{{.Names}}' | grep -q '^portainer$'; then
-        echo "<INFO> Entferne alten Portainer-Container"
-        docker rm --force portainer
+    if id "loxberry" >/dev/null 2>&1; then
+        usermod -aG docker loxberry || true
     fi
 
-    echo "<INFO> Lade Portainer-Image"
-    docker pull portainer/portainer-ce:latest
-
-    echo "<INFO> Starte Portainer"
-    docker run \
-        --volume=/var/run/docker.sock:/var/run/docker.sock \
-        --volume=/opt/portainer:/data \
-        -p=9000:9000 \
-        --name="portainer" \
-        --restart="unless-stopped" \
-        --detach=true \
-        portainer/portainer-ce:latest
 else
-    echo "<OK> Portainer läuft bereits"
+    echo "<OK> Docker bereits installiert"
 fi
 
+systemctl enable docker >/dev/null 2>&1 || true
+systemctl start docker >/dev/null 2>&1 || true
+
+# =========================================================
+# PORTAINER STATE MACHINE (SAFE LOGIC)
+# =========================================================
+
+PORTAINER_RUNNING=$(docker ps --format '{{.Names}}' | grep -qw portainer && echo "yes" || echo "no")
+PORTAINER_EXISTS=$(docker ps -a --format '{{.Names}}' | grep -qw portainer && echo "yes" || echo "no")
+
+# ---------------------------------------------------------
+# CASE 1: läuft korrekt
+# ---------------------------------------------------------
+if [ "$PORTAINER_RUNNING" = "yes" ]; then
+
+    echo "<OK> Portainer läuft korrekt"
+
+# ---------------------------------------------------------
+# CASE 2: existiert aber gestoppt → nur starten
+# ---------------------------------------------------------
+elif [ "$PORTAINER_EXISTS" = "yes" ]; then
+
+    echo "<INFO> Portainer existiert → Start"
+
+    docker start portainer >/dev/null 2>&1 || {
+
+        echo "<WARN> Start fehlgeschlagen → kontrollierter Restart"
+
+        docker rm -f portainer >/dev/null 2>&1 || true
+
+        docker pull portainer/portainer-ce:latest
+
+        docker run -d \
+            --name portainer \
+            --restart unless-stopped \
+            -p 9000:9000 \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v /opt/portainer:/data \
+            portainer/portainer-ce:latest
+    }
+
+# ---------------------------------------------------------
+# CASE 3: nicht vorhanden → neu installieren
+# ---------------------------------------------------------
+else
+
+    echo "<INFO> Portainer nicht vorhanden → Installation"
+
+    docker pull portainer/portainer-ce:latest
+
+    docker run -d \
+        --name portainer \
+        --restart unless-stopped \
+        -p 9000:9000 \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        -v /opt/portainer:/data \
+        portainer/portainer-ce:latest
+
+fi
+
+# =========================================================
+# SAFE CLEANUP (KEINE DATENVERLUSTE)
+# =========================================================
+echo "<INFO> Docker Cleanup (dangling images only)"
+docker image prune -f >/dev/null 2>&1 || true
+
+echo "<OK> Postinstall abgeschlossen sauber"
 exit 0

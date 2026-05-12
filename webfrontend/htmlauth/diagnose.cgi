@@ -7,7 +7,12 @@ use LoxBerry::System;
 use LoxBerry::Web;
 
 our $htmlhead = "<link rel='stylesheet' href='docker.css'>";
-LoxBerry::Web::lbheader("Docker Systemdiagnose (Pro)", undef, undef);
+
+LoxBerry::Web::lbheader(
+    "Docker Systemdiagnose (Pro)",
+    undef,
+    undef
+);
 
 print "<div class='card'>";
 print "<h1>Docker Systemdiagnose (Intelligent Pro)</h1>";
@@ -25,76 +30,96 @@ print qq{
 # ---------------------------------------------------------
 # SYSTEM INFO
 # ---------------------------------------------------------
-my $arch   = `uname -m 2>/dev/null`; chomp $arch;
-my $kernel = `uname -r 2>/dev/null`; chomp $kernel;
+my $arch   = `uname -m 2>/dev/null`;
+my $kernel = `uname -r 2>/dev/null`;
+
+chomp $arch;
+chomp $kernel;
 
 # ---------------------------------------------------------
-# DOCKER VERSION (robuster FIX)
+# DOCKER VERSION
 # ---------------------------------------------------------
-my $docker_version = `docker --version 2>/dev/null || true`;
+my $docker_version = `docker --version 2>/dev/null`;
+
 chomp $docker_version;
+
 $docker_version ||= "nicht installiert";
 
 # ---------------------------------------------------------
-# INSTALLATION DETECTION
+# ROBUSTER PACKAGE CHECK
 # ---------------------------------------------------------
-my $repo_file = `grep -l docker /etc/apt/sources.list.d/* 2>/dev/null`;
-chomp $repo_file;
+sub pkg_installed {
 
-my $install_type = "Unbekannt";
+    my ($pkg) = @_;
 
-if ($repo_file) {
-    $install_type = "APT Repository (docker-ce)";
+    my $out = `dpkg -s $pkg 2>/dev/null`;
+
+    return (
+        $out =~ /Status:\s+install ok installed/
+    ) ? 1 : 0;
 }
-elsif ($docker_version =~ /build/) {
-    $install_type = "get.docker.com Installation";
+
+my $docker_io   = pkg_installed("docker.io");
+my $docker_ce   = pkg_installed("docker-ce");
+my $docker_cli  = pkg_installed("docker-ce-cli");
+my $containerd  = pkg_installed("containerd.io");
+
+# ---------------------------------------------------------
+# INSTALLATION TYPE
+# ---------------------------------------------------------
+my $install_type = "Nicht installiert";
+
+if ($docker_ce && $docker_cli && $containerd) {
+
+    $install_type = "Docker CE (saubere Installation)";
+
+}
+elsif ($docker_io) {
+
+    $install_type = "Docker IO (Debian Paket)";
+
 }
 elsif ($docker_version ne "nicht installiert") {
-    $install_type = "Docker vorhanden (Quelle unklar)";
-}
-else {
-    $install_type = "Nicht installiert";
+
+    $install_type = "Docker vorhanden (unklare Quelle)";
 }
 
 # ---------------------------------------------------------
 # CONFLICT CHECK
 # ---------------------------------------------------------
-my $docker_io = `dpkg -l docker.io 2>/dev/null`;
-my $docker_ce = `dpkg -l docker-ce 2>/dev/null`;
-
 my $conflict_state = "OK";
 my $conflict_text  = "Keine Konflikte erkannt";
 
-if ($docker_io && $docker_ce) {
+if ($docker_io && ($docker_ce || $docker_cli)) {
+
     $conflict_state = "CRITICAL";
-    $conflict_text  = "KRITISCH: docker.io + docker-ce installiert";
+
+    $conflict_text =
+        "Mischinstallation erkannt (docker.io + docker-ce)";
+
 }
 elsif ($docker_io) {
+
     $conflict_state = "WARNING";
-    $conflict_text  = "docker.io installiert (Debian Version)";
+
+    $conflict_text =
+        "docker.io installiert (nicht empfohlen)";
+
 }
-elsif ($docker_ce) {
+elsif ($docker_ce && $docker_cli && $containerd) {
+
     $conflict_state = "OK";
-    $conflict_text  = "docker-ce installiert (empfohlen)";
+
+    $conflict_text =
+        "Docker CE Installation sauber";
+
 }
-else {
+elsif ($docker_version eq "nicht installiert") {
+
     $conflict_state = "UNKNOWN";
-    $conflict_text  = "Docker Installation nicht eindeutig erkannt";
-}
 
-# ---------------------------------------------------------
-# ARCH SUPPORT
-# ---------------------------------------------------------
-my $support_status = "Unbekannt";
-
-if ($arch =~ /x86_64/) {
-    $support_status = "x86_64 – vollständig unterstützt";
-}
-elsif ($arch =~ /aarch64|arm64|meson64/) {
-    $support_status = "ARM64 / meson64 – get.docker.com empfohlen";
-}
-else {
-    $support_status = "Spezielle Architektur";
+    $conflict_text =
+        "Docker ist nicht installiert";
 }
 
 # ---------------------------------------------------------
@@ -103,25 +128,21 @@ else {
 my $root_cause = "Keine Probleme erkannt";
 
 if ($conflict_state eq "CRITICAL") {
-    $root_cause = "Mischinstallation (docker.io + docker-ce)";
-}
-elsif ($arch =~ /aarch64|arm64|meson64/) {
-    $root_cause = "ARM64 System – apt Installation kritisch";
-}
 
-# ---------------------------------------------------------
-# ACTION ENGINE
-# ---------------------------------------------------------
-my $action = "OK";
+    $root_cause =
+        "Mischinstallation docker.io + docker-ce";
 
-if ($conflict_state eq "CRITICAL") {
-    $action = "REINSTALL";
-}
-elsif ($docker_version eq "nicht installiert") {
-    $action = "INSTALL";
 }
 elsif ($conflict_state eq "WARNING") {
-    $action = "CHECK";
+
+    $root_cause =
+        "Debian docker.io aktiv";
+
+}
+elsif ($conflict_state eq "UNKNOWN") {
+
+    $root_cause =
+        "Docker fehlt";
 }
 
 # ---------------------------------------------------------
@@ -129,20 +150,32 @@ elsif ($conflict_state eq "WARNING") {
 # ---------------------------------------------------------
 my $recommendation = "";
 
-if ($action eq "REINSTALL" || $action eq "INSTALL") {
+if ($conflict_state eq "CRITICAL") {
 
     $recommendation = qq{
 <b>Empfehlung</b><br><br>
-Docker Installation über offizielles Script:<br><br>
+Mischinstallation erkannt – Bereinigung empfohlen:<br><br>
+<code>apt remove docker.io</code><br><br>
+Anschließend optional:<br><br>
 <code>curl -fsSL https://get.docker.com | sh</code>
     };
 
 }
-elsif ($action eq "CHECK") {
+elsif ($conflict_state eq "WARNING") {
 
     $recommendation = qq{
 <b>Hinweis</b><br><br>
-docker.io vorhanden – kein kritischer Fehler.
+docker.io ist installiert.<br>
+Kein kritischer Fehler, aber Docker CE wird empfohlen.
+    };
+
+}
+elsif ($conflict_state eq "UNKNOWN") {
+
+    $recommendation = qq{
+<b>Docker nicht installiert</b><br><br>
+Installation empfohlen:<br><br>
+<code>curl -fsSL https://get.docker.com | sh</code>
     };
 
 }
@@ -150,7 +183,7 @@ else {
 
     $recommendation = qq{
 <b>System OK</b><br><br>
-Keine Aktion erforderlich.
+Docker ist sauber installiert.
     };
 }
 
@@ -158,7 +191,11 @@ Keine Aktion erforderlich.
 # OUTPUT
 # ---------------------------------------------------------
 print "<h3>System</h3>";
-print "<pre>Architektur: $arch\nKernel: $kernel</pre>";
+
+print "<pre>";
+print "Architektur: $arch\n";
+print "Kernel: $kernel";
+print "</pre>";
 
 print "<h3>Docker Version</h3>";
 print "<pre>$docker_version</pre>";
@@ -169,26 +206,33 @@ print "<pre>$install_type</pre>";
 print "<h3>Konflikte</h3>";
 
 if ($conflict_state eq "OK") {
+
     print "<pre style='color:green;'>$conflict_text</pre>";
+
 }
 elsif ($conflict_state eq "WARNING") {
+
     print "<pre style='color:orange;'>$conflict_text</pre>";
+
 }
 elsif ($conflict_state eq "CRITICAL") {
+
     print "<pre style='color:red;'>$conflict_text</pre>";
+
 }
 else {
+
     print "<pre>$conflict_text</pre>";
 }
-
-print "<h3>Support Status</h3>";
-print "<pre>$support_status</pre>";
 
 print "<h3>Root Cause</h3>";
 print "<pre>$root_cause</pre>";
 
 print "<h3>Bewertung</h3>";
-print "<div class='diagnose-section'>$recommendation</div>";
+
+print "<div class='diagnose-section'>";
+print $recommendation;
+print "</div>";
 
 # ---------------------------------------------------------
 # BUTTONS

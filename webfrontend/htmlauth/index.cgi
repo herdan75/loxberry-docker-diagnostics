@@ -7,157 +7,117 @@ use CGI qw(escapeHTML);
 use LoxBerry::System;
 use LoxBerry::Web;
 
-# ---------------------------------------------------------
-# Plugin-Version
-# ---------------------------------------------------------
-my $version = LoxBerry::System::pluginversion();
-
-# ---------------------------------------------------------
-# Saubere IP-Ermittlung (robust für ARM / Multi-NIC)
-# ---------------------------------------------------------
-my $ip = LoxBerry::System::get_localip();
-$ip ||= `hostname -I 2>/dev/null | awk '{print $1}'`;
-chomp($ip);
-$ip ||= "localhost";
-
-# ---------------------------------------------------------
-# HTML Header
-# ---------------------------------------------------------
 our $htmlhead = "<link rel='stylesheet' href='docker.css'>";
-LoxBerry::Web::lbheader("Docker", "https://www.docker.com", undef);
+
+LoxBerry::Web::lbheader("Docker / Container (Enterprise V3+)", undef, undef);
 
 # =========================================================
-# PORTAINER STATUS (robust via docker inspect)
+# HOST / IP
 # =========================================================
-my $portainer_running = `docker inspect -f '{{.State.Running}}' portainer 2>/dev/null`;
-chomp($portainer_running);
-
-my $is_running = ($portainer_running && $portainer_running eq "true") ? 1 : 0;
-
-my $status_text  = $is_running ? "Läuft" : "Gestoppt";
-my $status_color = $is_running ? "#28a745" : "#dc3545";
+my $host = LoxBerry::System::get_localip();
+$host ||= `hostname -I 2>/dev/null | awk '{print \$1}'`;
+chomp($host);
+$host ||= "localhost";
 
 # =========================================================
-# DOCKER CONTAINER LIST (mit Timeout Schutz)
+# CONTAINER LIST (FAST MODE)
 # =========================================================
-my @containers;
+my @containers = `docker ps --format "{{.Names}}|{{.Status}}|{{.Ports}}" 2>/dev/null`;
+chomp @containers;
 
-eval {
-    local $SIG{ALRM} = sub { die "timeout\n" };
-    alarm(2);
+# =========================================================
+# PAGE
+# =========================================================
+print "<div class='card'>";
+print "<h1>Docker Container (Enterprise V3+)</h1>";
 
-    @containers = `docker ps --format "{{.Names}}|{{.Status}}" 2>/dev/null`;
-
-    alarm(0);
+print qq{
+<p style="color:#666;">
+Fast Engine Mode (no inspect / low CPU)
+</p>
 };
-alarm(0);
+
+print qq{
+<table class="docker-table">
+<tr style="background:#0078d4;color:white;">
+<th>Name</th>
+<th>Status</th>
+<th>Ports / URL</th>
+</tr>
+};
 
 # =========================================================
-# Portainer URL sicher bauen
+# HELPERS
 # =========================================================
-my $portainer_url = ($ip && $ip ne "localhost")
-    ? "http://$ip:9000"
-    : "#";
+sub status_chip {
+    my ($status) = @_;
 
-# =========================================================
-# HTML OUTPUT
-# =========================================================
-print <<HTML;
-
-<div class="card">
-    <h1>Docker / Portainer</h1>
-
-    <p>Verwaltung deiner Docker-Container über Portainer.</p>
-
-    <a class="btn" href="$portainer_url" target="_blank">
-        Portainer öffnen
-    </a>
-
-    <div style="margin-top:20px;">
-        <span style="
-            padding:8px 15px;
-            background:$status_color;
-            color:white;
-            border-radius:6px;
-        ">
-            Portainer Status: $status_text
-        </span>
-    </div>
-
-    <p style="margin-top:20px; color:#666;">
-        Plugin-Version: $version<br>
-        Portainer-Adresse: $portainer_url
-    </p>
-</div>
-
-<!-- ---------------------------------------------------------
-     Diagnose
----------------------------------------------------------- -->
-
-<div class="card">
-
-    <h2>Docker Systemdiagnose</h2>
-
-    <p>
-        Analysiert Docker-Version, Paketquellen, Update-Status und mögliche Konflikte.
-    </p>
-
-    <form action="diagnose.cgi" method="get" style="margin-top:10px;">
-        <button type="submit" class="btn" style="background:#ffc107; color:#000;">
-            Docker Systemdiagnose anzeigen
-        </button>
-    </form>
-
-</div>
-
-<!-- ---------------------------------------------------------
-     Container Tabelle
----------------------------------------------------------- -->
-
-<div class="card">
-
-    <h2>Docker Container</h2>
-
-    <table style="margin:0 auto; border-collapse:collapse; width:80%;">
-
-        <tr style="background:#0078d4; color:white;">
-            <th style="padding:10px;">Name</th>
-            <th style="padding:10px;">Status</th>
-        </tr>
-
-HTML
+    if ($status =~ /Up/) {
+        return "<span style='background:#28a745;color:white;padding:4px 10px;border-radius:6px;'>Running</span>";
+    }
+    return "<span style='background:#dc3545;color:white;padding:4px 10px;border-radius:6px;'>Stopped</span>";
+}
 
 # =========================================================
-# TABLE OUTPUT SAFE
+# MAIN LOOP
 # =========================================================
 foreach my $line (@containers) {
 
-    chomp($line);
+    my ($name, $status, $ports) = split(/\|/, $line);
 
-    my ($name, $status) = split(/\|/, $line);
+    $name   = escapeHTML($name   || "");
+    $status = escapeHTML($status || "");
+    $ports  = $ports || "";
 
-    $name   = escapeHTML($name // "");
-    $status = escapeHTML($status // "");
+    my $url_html = "";
 
-    print <<ROW;
-        <tr>
-            <td style="padding:10px; border-bottom:1px solid #ccc;">
-                $name
-            </td>
-            <td style="padding:10px; border-bottom:1px solid #ccc;">
-                $status
-            </td>
-        </tr>
-ROW
+    # =====================================================
+    # PORT PARSING
+    # =====================================================
+    if ($ports =~ /0\.0\.0\.0:(\d+)->/) {
+
+        my $port = $1;
+        my $proto = ($port == 443) ? "https" : "http";
+        my $url   = "$proto://$host:$port";
+
+        $url_html .= qq{<a href="$url" target="_blank">$url</a>};
+    }
+    elsif ($ports =~ /:(\d+)->/) {
+
+        my $port = $1;
+        my $proto = ($port == 443) ? "https" : "http";
+        my $url   = "$proto://$host:$port";
+
+        $url_html .= qq{<a href="$url" target="_blank">$url</a>};
+    }
+
+    # =====================================================
+    # UI FALLBACK
+    # =====================================================
+    if (!$url_html) {
+        $url_html = "<span style='color:#888;font-style:italic;'>n/a</span>";
+    }
+
+    # =====================================================
+    # OUTPUT ROW
+    # =====================================================
+    print "<tr>";
+
+    print "<td style='padding:10px;border-bottom:1px solid #ddd;'>$name</td>";
+
+    print "<td style='padding:10px;border-bottom:1px solid #ddd;'>";
+    print status_chip($status);
+    print "</td>";
+
+    print "<td style='padding:10px;border-bottom:1px solid #ddd;'>$url_html</td>";
+
+    print "</tr>";
 }
 
-print <<HTML;
+print "</table>";
+print "</div>";
 
-    </table>
-
-</div>
-
-HTML
-
-# Footer
+# =========================================================
+# FOOTER
+# =========================================================
 LoxBerry::Web::lbfooter();

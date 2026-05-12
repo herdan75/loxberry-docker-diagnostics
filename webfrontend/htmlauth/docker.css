@@ -1,0 +1,114 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+}
+
+/* ---------------------------------------------------------
+   Hauptkarten
+---------------------------------------------------------- */
+
+.card {
+    background: white;
+    padding: 25px;
+    margin: 20px auto;
+    width: 70%;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+/* ---------------------------------------------------------
+   Buttons
+---------------------------------------------------------- */
+
+.btn {
+    display: inline-block;
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #0078d4, #005fa3);
+    color: white;
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: 20px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    transition: all 0.2s ease-in-out;
+    border: none;
+    cursor: pointer;
+}
+
+.btn:hover {
+    background: linear-gradient(135deg, #0088f0, #006bbd);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.22);
+}
+
+/* ---------------------------------------------------------
+   Diagnose-Box
+---------------------------------------------------------- */
+
+.diagnose-section {
+    background: #fff8e1;
+    border: 1px solid #ffe082;
+    padding: 20px;
+    margin: 20px auto;
+    width: 70%;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    text-align: left;
+}
+
+.diagnose-section h3 {
+    margin-top: 0;
+    color: #ff8f00;
+}
+
+.diagnose-section pre {
+    background: #fff3cd;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ffeeba;
+    white-space: pre-wrap;
+    font-size: 14px;
+}
+
+/* ---------------------------------------------------------
+   MINI HINWEIS (NEU – klein & dezent)
+---------------------------------------------------------- */
+
+.analysis-info-small {
+    background: #fff3cd;
+    border: 1px solid #ffeeba;
+
+    padding: 8px 10px;
+    margin: 10px auto;
+
+    width: 70%;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+    line-height: 1.4;
+
+    color: #856404;
+
+    text-align: center;
+
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+/* ---------------------------------------------------------
+   Tabellen
+---------------------------------------------------------- */
+
+table {
+    background: white;
+}
+
+th {
+    font-size: 16px;
+}
+
+td {
+    font-size: 15px;
+}

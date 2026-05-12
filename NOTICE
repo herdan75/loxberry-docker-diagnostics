@@ -1,0 +1,16 @@
+This project is based on:
+
+loxberry-plugin-docker
+Copyright Michael Miklis
+
+Original repository:
+https://github.com/michaelmiklis/loxberry-plugin-docker
+
+This repository contains modifications, modernizations,
+diagnostic extensions, UI improvements and compatibility
+updates for LoxBerry 3.x.
+
+Modernization and extensions:
+Copyright © 2026 Daniel Hermann
+
+Licensed under the Apache License 2.0.

@@ -1,12 +1,22 @@
-<h1><TMPL_VAR NAME=T::BASIC.HEADING_BASICSETTINGS></h1>
+<h1><TMPL_VAR NAME="T::BASIC.HEADING_BASICSETTINGS" ESCAPE=HTML></h1>
 
-<div class="pluginMessage"><TMPL_VAR lblNoNewWindowText></div>
+<div class="pluginMessage">
+    <TMPL_VAR NAME="lblNoNewWindowText" ESCAPE=HTML>
+</div>
 
-<br><br>
+<div style="margin-top:25px; text-align:center;">
 
-<center>
-	<a class="ui-btn ui-input-btn ui-corner-all ui-shadow" style="display: inline;" href="./forward.html"  target="_blank"><TMPL_VAR btnOpenInNewWindow></a>
-</center>
+    <a class="ui-btn ui-input-btn ui-corner-all ui-shadow"
+       style="display:inline-block;"
+       href="./forward.html"
+       target="_blank">
 
-</i><TMPL_VAR NAME=T::FOOTER.GREETING></i>
+        <TMPL_VAR NAME="btnOpenInNewWindow" ESCAPE=HTML>
 
+    </a>
+
+</div>
+
+<div style="margin-top:25px; text-align:center; font-style:italic; color:#777;">
+    <TMPL_VAR NAME="T::FOOTER.GREETING" ESCAPE=HTML>
+</div>

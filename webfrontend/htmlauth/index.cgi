@@ -9,12 +9,12 @@ use LoxBerry::System;
 use LoxBerry::Web;
 
 # =========================================================
-# STORAGE FILE
+# STORAGE
 # =========================================================
 my $store_file = "/opt/loxberry/data/docker_services.json";
 
 # =========================================================
-# SAVE HANDLING
+# SAVE ACTION
 # =========================================================
 my $query = $ENV{QUERY_STRING} || "";
 
@@ -24,9 +24,6 @@ if ($query =~ /save=1/) {
 
     my $container = $cgi->param('container') || "";
     my $url       = $cgi->param('url') || "";
-
-    $container = escapeHTML($container);
-    $url       = escapeHTML($url);
 
     my $data = {};
 
@@ -39,6 +36,7 @@ if ($query =~ /save=1/) {
         eval { $data = decode_json($json); };
     }
 
+    # speichern
     $data->{$container} = $url;
 
     open(my $fh, ">", $store_file);
@@ -47,7 +45,7 @@ if ($query =~ /save=1/) {
 }
 
 # =========================================================
-# LOAD SAVED DATA
+# LOAD DATA
 # =========================================================
 my $saved = {};
 
@@ -61,41 +59,34 @@ if (-e $store_file) {
 }
 
 # =========================================================
-# HOST (nur Fallback Anzeige)
+# HOST
 # =========================================================
 my $host = LoxBerry::System::get_localip();
 $host ||= "localhost";
 
 # =========================================================
-# DOCKER CONTAINERS
+# CONTAINERS
 # =========================================================
 my @containers = `docker ps --format "{{.Names}}|{{.Status}}" 2>/dev/null`;
 chomp @containers;
 
 # =========================================================
-# UI HEADER
+# HEADER
 # =========================================================
 our $htmlhead = "<link rel='stylesheet' href='docker.css'>";
-LoxBerry::Web::lbheader("Docker Übersicht (Manual Service Mode)", undef, undef);
-
-print "<div class='card'>";
-print "<h1>Docker Container Übersicht</h1>";
-
-print "<p style='color:#666'>
-Manueller Service Mode (stabil & ohne Port-Erkennung)
-</p>";
-
-print "</div>";
+LoxBerry::Web::lbheader("Übersicht Docker Container", undef, undef);
 
 # =========================================================
-# PORTAINER CARD
+# PORTAINER
 # =========================================================
 my $portainer_url = "http://$host:9000";
 
 print "<div class='card'>";
-print "<h2>Docker / Portainer</h2>";
+print "<h1>Docker / Portainer</h1>";
 
 print qq{
+<p>Verwaltung deiner Docker-Container über Portainer.</p>
+
 <a class="btn" href="$portainer_url" target="_blank">
     Portainer öffnen
 </a>
@@ -108,14 +99,14 @@ Portainer: $portainer_url
 print "</div>";
 
 # =========================================================
-# DIAGNOSE CARD
+# DIAGNOSE
 # =========================================================
 print "<div class='card'>";
 
 print qq{
-<h2>Docker Analyse</h2>
+<h2>Docker Systemdiagnose</h2>
 
-<p>Systemdiagnose bleibt verfügbar (Version / Zustand / Konflikte).</p>
+<p>Analyse bleibt verfügbar (Version / Status / System).</p>
 
 <a href="diagnose.cgi" class="btn" style="background:#ffc107;color:#000;">
     Diagnose starten
@@ -128,12 +119,12 @@ print "</div>";
 # TABLE
 # =========================================================
 print "<div class='card'>";
-print "<h2>Container Services (manuell gepflegt)</h2>";
+print "<h2>Übersicht Docker Container</h2>";
 
 print qq{
 <table class="docker-table">
 <tr style="background:#0078d4;color:white;">
-<th>Container</th>
+<th>Name</th>
 <th>Status</th>
 <th>Service URL</th>
 <th>Aktion</th>
@@ -145,6 +136,7 @@ print qq{
 # =========================================================
 sub status_chip {
     my ($status) = @_;
+
     return ($status =~ /Up/)
         ? "<span style='background:#28a745;color:white;padding:4px 10px;border-radius:6px;'>Running</span>"
         : "<span style='background:#dc3545;color:white;padding:4px 10px;border-radius:6px;'>Stopped</span>";
@@ -162,6 +154,7 @@ foreach my $line (@containers) {
 
     my $saved_url = $saved->{$name} || "";
 
+    # Anzeige-Link
     my $link_html = $saved_url
         ? qq{<a href="$saved_url" target="_blank">$saved_url</a>}
         : "<span style='color:#999;'>n/a</span>";
@@ -179,7 +172,7 @@ foreach my $line (@containers) {
     # URL
     print "<td style='padding:10px;border-bottom:1px solid #ddd;'>$link_html</td>";
 
-    # EDIT FORM
+    # INPUT + SAVE
     print "<td style='padding:10px;border-bottom:1px solid #ddd;'>";
 
     print qq{
@@ -189,9 +182,17 @@ foreach my $line (@containers) {
 
             <input type="text"
                    name="url"
-                   value="$saved_url"
-                   placeholder="http://ip:port"
-                   style="width:180px;">
+                   value=""
+                   placeholder="http(s)://IP:PORT oder https://domain.tld"
+                   style="
+                       width: 320px;
+                       padding: 10px 12px;
+                       font-size: 14px;
+                       line-height: 20px;
+                       letter-spacing: 0.2px;
+                       box-sizing: border-box;
+                       border-radius: 6px;
+                   ">
 
             <button type="submit" class="btn" style="padding:6px 10px;">
                 Speichern

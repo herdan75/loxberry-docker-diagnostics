@@ -33,21 +33,16 @@ if ($query =~ /save=1/) {
         local $/;
 
         my $json = <$fh>;
-
         close($fh);
 
-        eval {
-            $data = decode_json($json);
-        };
+        eval { $data = decode_json($json); };
     }
 
     # speichern
     $data->{$container} = $url;
 
     open(my $fh, ">", $store_file);
-
     print $fh encode_json($data);
-
     close($fh);
 }
 
@@ -59,16 +54,12 @@ my $saved = {};
 if (-e $store_file) {
 
     open(my $fh, "<", $store_file);
-
     local $/;
 
     my $json = <$fh>;
-
     close($fh);
 
-    eval {
-        $saved = decode_json($json);
-    };
+    eval { $saved = decode_json($json); };
 }
 
 # =========================================================
@@ -81,7 +72,6 @@ $host ||= "localhost";
 # CONTAINERS
 # =========================================================
 my @containers = `docker ps --format "{{.Names}}|{{.Status}}" 2>/dev/null`;
-
 chomp @containers;
 
 # =========================================================
@@ -105,14 +95,11 @@ print "<div class='card'>";
 print "<h1>Docker / Portainer</h1>";
 
 print qq{
-<p>
-Verwaltung deiner Docker-Container über Portainer.
-</p>
+<p>Verwaltung deiner Docker-Container über Portainer.</p>
 
 <a class="btn"
    href="$portainer_url"
-   target="_blank"
-   style="color:#000;">
+   target="_blank">
     Portainer öffnen
 </a>
 
@@ -134,12 +121,10 @@ print qq{
 <p>
 Systemdiagnose zur Validierung der Docker-Installation
 (Version, Pakete, Konflikte und Systemzustand).
-Keine automatische Port-Erkennung.
 </p>
 
 <a href="diagnose.cgi"
-   class="btn"
-   style="background:#ffc107;color:#000;">
+   class="btn btn-warning">
     Diagnose starten
 </a>
 };
@@ -154,27 +139,12 @@ print "<div class='card'>";
 print "<h2>Übersicht Docker Container</h2>";
 
 print qq{
-<table class="docker-table"
-       style="border-radius:8px;overflow:hidden;">
-
-<tr style="background:#0078d4;color:#000;">
-
-<th style="padding:12px;">
-    Name
-</th>
-
-<th style="padding:12px;">
-    Status
-</th>
-
-<th style="padding:12px;">
-    Service URL
-</th>
-
-<th style="padding:12px;">
-    Service URL zuordnen
-</th>
-
+<table class="docker-table">
+<tr>
+    <th>Name</th>
+    <th>Status</th>
+    <th>Service URL</th>
+    <th>Service URL zuordnen</th>
 </tr>
 };
 
@@ -186,8 +156,8 @@ sub status_chip {
     my ($status) = @_;
 
     return ($status =~ /Up/)
-        ? "<span style='background:#28a745;color:white;padding:5px 12px;border-radius:8px;'>Running</span>"
-        : "<span style='background:#dc3545;color:white;padding:5px 12px;border-radius:8px;'>Stopped</span>";
+        ? "<span class='status-running'>Running</span>"
+        : "<span class='status-stopped'>Stopped</span>";
 }
 
 # =========================================================
@@ -202,90 +172,29 @@ foreach my $line (@containers) {
 
     my $saved_url = $saved->{$name} || "";
 
-    # -----------------------------------------------------
-    # LINK
-    # -----------------------------------------------------
     my $link_html = $saved_url
-        ? qq{
-            <a href="$saved_url" target="_blank">
-                $saved_url
-            </a>
-        }
+        ? qq{<a href="$saved_url" target="_blank">$saved_url</a>}
         : "<span style='color:#999;'>n/a</span>";
 
     print "<tr>";
 
-    # -----------------------------------------------------
-    # NAME
-    # -----------------------------------------------------
     print qq{
-<td style="padding:12px;border-bottom:1px solid #ddd;">
-    $safe_name
-</td>
-};
-
-    # -----------------------------------------------------
-    # STATUS
-    # -----------------------------------------------------
-    print qq{
-<td style="padding:12px;border-bottom:1px solid #ddd;">
-};
-
-    print status_chip($status);
-
-    print "</td>";
-
-    # -----------------------------------------------------
-    # URL
-    # -----------------------------------------------------
-    print qq{
-<td style="padding:12px;border-bottom:1px solid #ddd;">
-    $link_html
-</td>
-};
-
-    # -----------------------------------------------------
-    # INPUT
-    # -----------------------------------------------------
-    print qq{
-<td style="padding:12px;border-bottom:1px solid #ddd;">
+<td>$safe_name</td>
+<td>} . status_chip($status) . qq{</td>
+<td>$link_html</td>
+<td>
 
 <form method="GET" action="">
-
-    <input type="hidden"
-           name="save"
-           value="1">
-
-    <input type="hidden"
-           name="container"
-           value="$safe_name">
+    <input type="hidden" name="save" value="1">
+    <input type="hidden" name="container" value="$safe_name">
 
     <input type="text"
            name="url"
            value=""
            placeholder="http(s)://IP:PORT oder https://domain.tld"
-           style="
-               width:320px;
-               padding:10px 12px;
-               font-size:14px;
-               line-height:20px;
-               letter-spacing:0.2px;
-               box-sizing:border-box;
-               border-radius:8px;
-               border:1px solid #ccc;
-           ">
+           class="input-url">
 
-    <button type="submit"
-            class="btn"
-            style="
-                padding:8px 14px;
-                margin-left:8px;
-                border-radius:8px;
-                color:#000;
-            ">
-        Speichern
-    </button>
-
+    <button type="submit" class="btn">Speichern</button>
 </form>
 
 </td>
@@ -295,7 +204,6 @@ foreach my $line (@containers) {
 }
 
 print "</table>";
-
 print "</div>";
 
 # =========================================================

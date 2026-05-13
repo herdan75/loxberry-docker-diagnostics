@@ -6,6 +6,9 @@ use warnings;
 use LoxBerry::System;
 use LoxBerry::Web;
 
+# =========================================================
+# HEADER
+# =========================================================
 our $htmlhead = "<link rel='stylesheet' href='docker.css'>";
 
 LoxBerry::Web::lbheader(
@@ -14,21 +17,18 @@ LoxBerry::Web::lbheader(
     undef
 );
 
-# =========================================================
-# CARD START
-# =========================================================
 print "<div class='card'>";
 print "<h1>Docker Systemdiagnose</h1>";
 
 # =========================================================
-# INFO BOX
+# INFO BOX (schlicht)
 # =========================================================
 print qq{
-<div class="analysis-info-small" style="
+<div style="
     background:#eef5fb;
     border:1px solid #c8dff2;
     color:#1f2937;
-    border-radius:10px;
+    border-radius:6px;
     padding:12px;
     margin-top:20px;
 ">
@@ -40,33 +40,23 @@ print qq{
 # =========================================================
 # SYSTEM INFO
 # =========================================================
-my $arch   = `uname -m 2>/dev/null`;
-my $kernel = `uname -r 2>/dev/null`;
-
-chomp $arch;
-chomp $kernel;
+my $arch   = `uname -m 2>/dev/null`; chomp $arch;
+my $kernel = `uname -r 2>/dev/null`; chomp $kernel;
 
 # =========================================================
 # DOCKER VERSION
 # =========================================================
 my $docker_version = `docker --version 2>/dev/null`;
-
 chomp $docker_version;
-
 $docker_version ||= "nicht installiert";
 
 # =========================================================
-# ROBUSTER PACKAGE CHECK
+# PACKAGE CHECK
 # =========================================================
 sub pkg_installed {
-
     my ($pkg) = @_;
-
     my $out = `dpkg -s $pkg 2>/dev/null`;
-
-    return (
-        $out =~ /Status:\s+install ok installed/
-    ) ? 1 : 0;
+    return ($out =~ /Status:\s+install ok installed/) ? 1 : 0;
 }
 
 my $docker_io   = pkg_installed("docker.io");
@@ -80,17 +70,12 @@ my $containerd  = pkg_installed("containerd.io");
 my $install_type = "Nicht installiert";
 
 if ($docker_ce && $docker_cli && $containerd) {
-
     $install_type = "Docker CE (saubere Installation)";
-
 }
 elsif ($docker_io) {
-
     $install_type = "Docker IO (Debian Paket)";
-
 }
 elsif ($docker_version ne "nicht installiert") {
-
     $install_type = "Docker vorhanden (unklare Quelle)";
 }
 
@@ -101,35 +86,20 @@ my $conflict_state = "OK";
 my $conflict_text  = "Keine Konflikte erkannt";
 
 if ($docker_io && ($docker_ce || $docker_cli)) {
-
     $conflict_state = "CRITICAL";
-
-    $conflict_text =
-        "Mischinstallation erkannt (docker.io + docker-ce)";
-
+    $conflict_text  = "Mischinstallation erkannt (docker.io + docker-ce)";
 }
 elsif ($docker_io) {
-
     $conflict_state = "WARNING";
-
-    $conflict_text =
-        "docker.io installiert (nicht empfohlen)";
-
+    $conflict_text  = "docker.io installiert (nicht empfohlen)";
 }
 elsif ($docker_ce && $docker_cli && $containerd) {
-
     $conflict_state = "OK";
-
-    $conflict_text =
-        "Docker CE Installation sauber";
-
+    $conflict_text  = "Docker CE Installation sauber";
 }
 elsif ($docker_version eq "nicht installiert") {
-
     $conflict_state = "UNKNOWN";
-
-    $conflict_text =
-        "Docker ist nicht installiert";
+    $conflict_text  = "Docker ist nicht installiert";
 }
 
 # =========================================================
@@ -138,21 +108,13 @@ elsif ($docker_version eq "nicht installiert") {
 my $root_cause = "Keine Probleme erkannt";
 
 if ($conflict_state eq "CRITICAL") {
-
-    $root_cause =
-        "Mischinstallation docker.io + docker-ce";
-
+    $root_cause = "Mischinstallation docker.io + docker-ce";
 }
 elsif ($conflict_state eq "WARNING") {
-
-    $root_cause =
-        "Debian docker.io aktiv";
-
+    $root_cause = "Debian docker.io aktiv";
 }
 elsif ($conflict_state eq "UNKNOWN") {
-
-    $root_cause =
-        "Docker fehlt";
+    $root_cause = "Docker fehlt";
 }
 
 # =========================================================
@@ -166,27 +128,11 @@ if ($conflict_state eq "CRITICAL") {
 <b>Empfehlung</b><br><br>
 Mischinstallation erkannt – Bereinigung empfohlen:<br><br>
 
-<div style="
-    background:#f4f4f4;
-    padding:10px;
-    border-radius:10px;
-    margin-bottom:10px;
-    font-family:monospace;
-">
-apt remove docker.io
-</div>
+<div class="codebox">apt remove docker.io</div>
 
 Anschließend optional:
 
-<div style="
-    background:#f4f4f4;
-    padding:10px;
-    border-radius:10px;
-    margin-top:10px;
-    font-family:monospace;
-">
-curl -fsSL https://get.docker.com | sh
-</div>
+<div class="codebox">curl -fsSL https://get.docker.com | sh</div>
     };
 
 }
@@ -206,15 +152,7 @@ elsif ($conflict_state eq "UNKNOWN") {
 
 Installation empfohlen:
 
-<div style="
-    background:#f4f4f4;
-    padding:10px;
-    border-radius:10px;
-    margin-top:10px;
-    font-family:monospace;
-">
-curl -fsSL https://get.docker.com | sh
-</div>
+<div class="codebox">curl -fsSL https://get.docker.com | sh</div>
     };
 
 }
@@ -227,41 +165,21 @@ Docker ist sauber installiert.
 }
 
 # =========================================================
-# SECTION HELPER
+# SECTION HELPER (schlicht, LoxBerry‑Standard)
 # =========================================================
 sub section {
 
     my ($title, $content, $color) = @_;
-
     $color ||= "#1f2937";
 
     print qq{
-    <div style="
-        margin-top:20px;
-        border:1px solid #dbe4ec;
-        border-radius:10px;
-        overflow:hidden;
-        background:white;
-    ">
+    <div class="section-box">
 
-        <div style="
-            background:#0078d4;
-            color:black;
-            padding:10px 14px;
-            font-weight:bold;
-            font-size:15px;
-        ">
+        <div class="section-title">
             $title
         </div>
 
-        <div style="
-            padding:14px;
-            color:$color;
-            background:#fafcff;
-            font-family:monospace;
-            line-height:1.6;
-            white-space:pre-wrap;
-        ">
+        <div class="section-content" style="color:$color;">
 $content
         </div>
 
@@ -270,74 +188,31 @@ $content
 }
 
 # =========================================================
-# OUTPUT
+# OUTPUT SECTIONS
 # =========================================================
-section(
-    "System",
-    "Architektur: $arch\nKernel: $kernel"
-);
-
-section(
-    "Docker Version",
-    $docker_version
-);
-
-section(
-    "Installationsart",
-    $install_type
-);
+section("System", "Architektur: $arch\nKernel: $kernel");
+section("Docker Version", $docker_version);
+section("Installationsart", $install_type);
 
 my $conflict_color = "#1f2937";
+$conflict_color = "#15803d" if $conflict_state eq "OK";
+$conflict_color = "#c2410c" if $conflict_state eq "WARNING";
+$conflict_color = "#b91c1c" if $conflict_state eq "CRITICAL";
 
-if ($conflict_state eq "OK") {
-    $conflict_color = "#15803d";
-}
-elsif ($conflict_state eq "WARNING") {
-    $conflict_color = "#c2410c";
-}
-elsif ($conflict_state eq "CRITICAL") {
-    $conflict_color = "#b91c1c";
-}
-
-section(
-    "Konflikte",
-    $conflict_text,
-    $conflict_color
-);
-
-section(
-    "Root Cause",
-    $root_cause
-);
+section("Konflikte", $conflict_text, $conflict_color);
+section("Root Cause", $root_cause);
 
 # =========================================================
 # BEWERTUNG
 # =========================================================
 print qq{
-<div style="
-    margin-top:20px;
-    border:1px solid #dbe4ec;
-    border-radius:10px;
-    overflow:hidden;
-    background:white;
-">
+<div class="section-box">
 
-    <div style="
-        background:#0078d4;
-        color:black;
-        padding:10px 14px;
-        font-weight:bold;
-        font-size:15px;
-    ">
+    <div class="section-title">
         Bewertung
     </div>
 
-    <div style="
-        padding:16px;
-        background:#fafcff;
-        line-height:1.6;
-        color:#1f2937;
-    ">
+    <div class="section-content">
         $recommendation
     </div>
 
@@ -351,32 +226,20 @@ print qq{
 <div style="text-align:center; margin-top:30px;">
 
     <a href="/admin/plugins/docker/index.cgi"
-       class="btn"
-       style="
-           background:#0078d4;
-           color:black;
-           border-radius:10px;
-       ">
+       class="btn">
        Zur Übersicht
     </a>
 
     <a href="diagnose.cgi"
        class="btn"
-       style="
-           background:#0078d4;
-           color:black;
-           margin-left:10px;
-           border-radius:10px;
-       ">
+       style="margin-left:10px;">
        Neu laden
     </a>
 
 </div>
 };
 
-# =========================================================
-# CARD END
-# =========================================================
 print "</div>";
 
 LoxBerry::Web::lbfooter();
+

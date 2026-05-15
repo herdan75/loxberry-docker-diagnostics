@@ -1,0 +1,58 @@
+name: Build LoxBerry ZIP
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF_NAME}"
+          elif [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+            VERSION="stable"
+          else
+            VERSION="prerelease"
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "zipname=loxberry-docker-diagnostics-$VERSION.zip" >> "$GITHUB_OUTPUT"
+
+      - name: Build ZIP
+        run: |
+          mkdir -p dist
+          zip -r "dist/${{ steps.version.outputs.zipname }}" . \
+            -x ".git/*" \
+            -x ".github/*" \
+            -x "dist/*" \
+            -x "*.zip"
+
+      - name: Upload ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.version.outputs.zipname }}
+          path: dist/${{ steps.version.outputs.zipname }}
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/${{ steps.version.outputs.zipname }}
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'pre') || contains(github.ref_name, 'rc') }}
+          generate_release_notes: true

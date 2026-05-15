@@ -11,7 +11,14 @@ use LoxBerry::Web;
 # =========================================================
 # STORAGE
 # =========================================================
-my $store_file = "/opt/loxberry/data/docker_services.json";
+my $store_file_old = "/opt/loxberry/data/docker_services.json";
+my $store_file     = "$lbpdatadir/docker_services.json";
+
+# Einmalige Migration alter Daten
+if (!-e $store_file && -e $store_file_old) {
+
+    system("cp", $store_file_old, $store_file);
+}
 
 # =========================================================
 # SAVE ACTION
@@ -99,7 +106,8 @@ print qq{
 
 <a class="btn"
    href="$portainer_url"
-   target="_blank">
+   target="_blank"
+   rel="noopener noreferrer">
     Portainer öffnen
 </a>
 
@@ -172,8 +180,12 @@ foreach my $line (@containers) {
 
     my $saved_url = $saved->{$name} || "";
 
+    my $safe_saved_url = escapeHTML($saved_url);
+
     my $link_html = $saved_url
-        ? qq{<a href="$saved_url" target="_blank">$saved_url</a>}
+        ? qq{<a href="$safe_saved_url"
+                target="_blank"
+                rel="noopener noreferrer">$safe_saved_url</a>}
         : "<span style='color:#999;'>n/a</span>";
 
     print "<tr>";

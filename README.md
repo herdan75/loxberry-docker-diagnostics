@@ -4,7 +4,7 @@ Modernisierte und erweiterte Docker- & Portainer-Integration für LoxBerry 3.x.
 
 Dieses Projekt basiert auf dem ursprünglichen Docker-Plugin von Michael Miklis und wurde vollständig modernisiert, stabilisiert und erweitert.
 
-Die neue Version integriert Docker sauber in die LoxBerry-Weboberfläche und bietet zusätzliche Diagnose- und Analysefunktionen für Docker-Systeme auf x86_64- und ARM-basierten Plattformen.
+Die neue Version integriert Docker sauber in die LoxBerry-Weboberflaeche und bietet zusaetzliche Diagnose- und Analysefunktionen fuer alle von LoxBerry 3.x und Docker unterstuetzten Plattformen.
 
 ---
 

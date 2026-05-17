@@ -1,5 +1,5 @@
 /* =========================================================
-   LoxBerry Standard – Schlichtes, ruhiges Layout
+   LoxBerry Standard - Schlichtes, ruhiges Layout
    ========================================================= */
 
 body {
@@ -33,12 +33,39 @@ body {
     border-radius: 6px;
     text-decoration: none;
     border: 1px solid #ccc;
+    cursor: pointer;
 }
 
 /* Diagnose-Button (orange) */
 .btn-warning {
     background: #ffc107 !important;
     color: #000 !important;
+}
+
+/* Hinweise */
+.notice {
+    border-radius: 6px;
+    padding: 12px;
+    margin: 0 0 18px 0;
+    border: 1px solid #d1d5db;
+}
+
+.notice-info {
+    background: #eef5fb;
+    border-color: #c8dff2;
+    color: #1f2937;
+}
+
+.notice-ok {
+    background: #ecfdf5;
+    border-color: #86efac;
+    color: #166534;
+}
+
+.notice-error {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
 }
 
 /* Tabelle */
@@ -59,6 +86,7 @@ body {
 .docker-table td {
     padding: 10px;
     border-bottom: 1px solid #ddd;
+    vertical-align: top;
 }
 
 /* Status Chips */
@@ -67,6 +95,7 @@ body {
     color: #fff;
     padding: 5px 12px;
     border-radius: 8px;
+    display: inline-block;
 }
 
 .status-stopped {
@@ -74,13 +103,74 @@ body {
     color: #fff;
     padding: 5px 12px;
     border-radius: 8px;
+    display: inline-block;
+}
+
+/* Diagnose Abschnitte */
+.section-box {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    margin-top: 14px;
+    overflow: hidden;
+}
+
+.section-title {
+    background: #e0e0e0;
+    color: #000;
+    font-weight: 600;
+    padding: 9px 12px;
+}
+
+.section-content {
+    padding: 12px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+.codebox {
+    background: #111827;
+    color: #f9fafb;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 10px 0;
+    font-family: Consolas, Monaco, monospace;
+    overflow-x: auto;
 }
 
 /* Input-Feld */
 .input-url {
     width: 280px;
+    max-width: 100%;
     padding: 8px;
     border-radius: 6px;
     border: 1px solid #ccc;
     font-size: 14px;
+    box-sizing: border-box;
+}
+
+.hint {
+    color: #666;
+    font-size: 13px;
+    margin-bottom: 0;
+}
+
+@media (max-width: 700px) {
+    .docker-table,
+    .docker-table tbody,
+    .docker-table tr,
+    .docker-table th,
+    .docker-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .docker-table tr {
+        border-bottom: 1px solid #ddd;
+        padding: 8px 0;
+    }
+
+    .docker-table th {
+        display: none;
+    }
 }

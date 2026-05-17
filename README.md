@@ -262,3 +262,13 @@ Eigene Erweiterungen, Modernisierungen und Diagnosefunktionen:
 * Modernisierung & Weiterentwicklung: Daniel Hermann
 
 
+
+---
+
+## Sicherheit & Betrieb
+
+Portainer wird mit Zugriff auf /var/run/docker.sock gestartet. Wer Zugriff auf Portainer erhält, kann damit faktisch Docker und damit große Teile des Hosts administrieren. Portainer sollte deshalb nur im vertrauenswürdigen lokalen Netz erreichbar sein und mit einem starken Passwort geschützt werden.
+
+Das Plugin verwendet bei einer fehlenden Docker-Installation das offizielle Docker-Installationsscript von https://get.docker.com. Das ist bequem, aber bewusst ein Root-Installationspfad aus dem Internet. Für produktive Systeme empfiehlt sich vorher ein Backup und eine Prüfung der bestehenden Docker-/APT-Paketquellen.
+
+Die Diagnose prüft zusätzlich Docker-Daemon, Portainer-Container, Portfreigaben, Docker-Compose, Docker-relevante APT-Updates und Speicherplatz. So lassen sich typische Fehler vor einem Update oder Release schneller erkennen.

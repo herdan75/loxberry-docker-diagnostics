@@ -1,6 +1,24 @@
 # Changelog
 
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
+## Unreleased (develop)
+
+### Neu
+- Docker-Diagnose um Daemon-Status, Portainer-Status, Portfreigaben, Docker Compose, APT-Updates und Speicherplatz erweitert
+- GitHub Actions Validierung für Shell-, Perl-CGI- und Plugin-Metadaten ergänzt
+
+### Geändert
+- Portainer-Installation nutzt einen stabileren Image-Kanal und erkennt den Container exakt
+- Service-URL-Verwaltung speichert per POST und zeigt vorhandene Zuordnungen im Formular an
+- README um Sicherheits- und Betriebshinweise erweitert
+
+### Behoben
+- Verwechslung von portainer mit ähnlich benannten Containern verhindert
+- Service-URLs werden auf http:// und https:// begrenzt
+- JSON-Speicherung der Service-URLs gegen parallele Schreibzugriffe gehärtet
+
+---
+
 
 ---
 

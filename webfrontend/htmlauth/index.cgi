@@ -4,7 +4,9 @@ use strict;
 use warnings;
 
 use CGI qw(escapeHTML);
-use JSON;
+use Fcntl qw(:flock);
+use File::Temp qw(tempfile);
+use JSON qw(decode_json encode_json);
 use LoxBerry::System;
 use LoxBerry::Web;
 
@@ -13,61 +15,112 @@ use LoxBerry::Web;
 # =========================================================
 my $store_file_old = "/opt/loxberry/data/docker_services.json";
 my $store_file     = "$lbpdatadir/docker_services.json";
+my $lock_file      = "$store_file.lock";
 
 # Einmalige Migration alter Daten
 if (!-e $store_file && -e $store_file_old) {
-
     system("cp", $store_file_old, $store_file);
 }
 
-# =========================================================
-# SAVE ACTION
-# =========================================================
-my $query = $ENV{QUERY_STRING} || "";
+sub read_saved_unlocked {
+    return {} if !-e $store_file;
 
-if ($query =~ /save=1/) {
-
-    my $cgi = CGI->new;
-
-    my $container = $cgi->param('container') || "";
-    my $url       = $cgi->param('url') || "";
-
-    my $data = {};
-
-    if (-e $store_file) {
-
-        open(my $fh, "<", $store_file);
-        local $/;
-
-        my $json = <$fh>;
-        close($fh);
-
-        eval { $data = decode_json($json); };
-    }
-
-    # speichern
-    $data->{$container} = $url;
-
-    open(my $fh, ">", $store_file);
-    print $fh encode_json($data);
-    close($fh);
-}
-
-# =========================================================
-# LOAD DATA
-# =========================================================
-my $saved = {};
-
-if (-e $store_file) {
-
-    open(my $fh, "<", $store_file);
+    open(my $fh, "<", $store_file) or return {};
     local $/;
 
     my $json = <$fh>;
     close($fh);
 
-    eval { $saved = decode_json($json); };
+    my $data = {};
+    eval { $data = decode_json($json || "{}"); };
+
+    return (ref $data eq "HASH") ? $data : {};
 }
+
+sub load_saved {
+    open(my $lock, ">>", $lock_file) or return read_saved_unlocked();
+    flock($lock, LOCK_SH);
+
+    my $data = read_saved_unlocked();
+
+    close($lock);
+    return $data;
+}
+
+sub valid_container_name {
+    my ($name) = @_;
+    return ($name && $name =~ /\A[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\z/) ? 1 : 0;
+}
+
+sub normalize_url {
+    my ($url) = @_;
+    $url ||= "";
+    $url =~ s/\A\s+|\s+\z//g;
+    return $url;
+}
+
+sub valid_service_url {
+    my ($url) = @_;
+    return ($url =~ m{\Ahttps?://[^\s<>"]+\z}i) ? 1 : 0;
+}
+
+# =========================================================
+# SAVE ACTION
+# =========================================================
+my $cgi = CGI->new;
+
+if (($ENV{REQUEST_METHOD} || "") eq "POST" && ($cgi->param('save') || "") eq "1") {
+
+    my $container = $cgi->param('container') || "";
+    my $url       = normalize_url($cgi->param('url') || "");
+
+    my $redirect = "index.cgi";
+
+    if (!valid_container_name($container)) {
+        $redirect .= "?err=container";
+    }
+    elsif ($url ne "" && !valid_service_url($url)) {
+        $redirect .= "?err=url";
+    }
+    else {
+        open(my $lock, ">>", $lock_file);
+        if ($lock && flock($lock, LOCK_EX)) {
+            my $data = read_saved_unlocked();
+
+            if ($url eq "") {
+                delete $data->{$container};
+            }
+            else {
+                $data->{$container} = $url;
+            }
+
+            my ($fh, $tmpfile) = tempfile("docker_services.XXXXXX", DIR => $lbpdatadir, UNLINK => 0);
+            print $fh encode_json($data);
+            close($fh);
+
+            if (rename($tmpfile, $store_file)) {
+                $redirect .= "?msg=saved";
+            }
+            else {
+                unlink $tmpfile;
+                $redirect .= "?err=save";
+            }
+
+            close($lock);
+        }
+        else {
+            $redirect .= "?err=lock";
+        }
+    }
+
+    print $cgi->redirect(-uri => $redirect, -status => "303 See Other");
+    exit;
+}
+
+# =========================================================
+# LOAD DATA
+# =========================================================
+my $saved = load_saved();
 
 # =========================================================
 # HOST
@@ -78,7 +131,7 @@ $host ||= "localhost";
 # =========================================================
 # CONTAINERS
 # =========================================================
-my @containers = `docker ps --format "{{.Names}}|{{.Status}}" 2>/dev/null`;
+my @containers = qx{docker ps --format "{{.Names}}|{{.Status}}" 2>/dev/null};
 chomp @containers;
 
 # =========================================================
@@ -91,6 +144,19 @@ LoxBerry::Web::lbheader(
     undef,
     undef
 );
+
+my $err = $cgi->param('err') || "";
+my $msg = $cgi->param('msg') || "";
+
+if ($msg eq "saved") {
+    print qq{<div class="notice notice-ok">Service URL gespeichert.</div>};
+}
+elsif ($err eq "url") {
+    print qq{<div class="notice notice-error">Nur http:// und https:// URLs sind erlaubt.</div>};
+}
+elsif ($err) {
+    print qq{<div class="notice notice-error">Service URL konnte nicht gespeichert werden.</div>};
+}
 
 # =========================================================
 # PORTAINER
@@ -173,19 +239,17 @@ sub status_chip {
 # =========================================================
 foreach my $line (@containers) {
 
-    my ($name, $status) = split(/\|/, $line);
+    my ($name, $status) = split(/\|/, $line, 2);
+    next if !defined $name || !defined $status;
 
-    my $safe_name   = escapeHTML($name);
-    my $safe_status = escapeHTML($status);
+    my $safe_name = escapeHTML($name);
+    my $saved_url = normalize_url($saved->{$name} || "");
+    my $safe_url  = escapeHTML($saved_url);
 
-    my $saved_url = $saved->{$name} || "";
-
-    my $safe_saved_url = escapeHTML($saved_url);
-
-    my $link_html = $saved_url
-        ? qq{<a href="$safe_saved_url"
+    my $link_html = ($saved_url && valid_service_url($saved_url))
+        ? qq{<a href="$safe_url"
                 target="_blank"
-                rel="noopener noreferrer">$safe_saved_url</a>}
+                rel="noopener noreferrer">$safe_url</a>}
         : "<span style='color:#999;'>n/a</span>";
 
     print "<tr>";
@@ -196,13 +260,13 @@ foreach my $line (@containers) {
 <td>$link_html</td>
 <td>
 
-<form method="GET" action="">
+<form method="POST" action="index.cgi">
     <input type="hidden" name="save" value="1">
     <input type="hidden" name="container" value="$safe_name">
 
     <input type="text"
            name="url"
-           value=""
+           value="$safe_url"
            placeholder="http(s)://IP:PORT oder https://domain.tld"
            class="input-url">
 
@@ -216,6 +280,7 @@ foreach my $line (@containers) {
 }
 
 print "</table>";
+print "<p class='hint'>Leeres URL-Feld speichern, um eine Zuordnung zu löschen.</p>";
 print "</div>";
 
 # =========================================================

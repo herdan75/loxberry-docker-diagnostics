@@ -105,7 +105,7 @@ print qq{
 # =========================================================
 my $arch   = cmd_output("uname -m");
 my $kernel = cmd_output("uname -r");
-my $os     = cmd_output(". /etc/os-release && echo \"$PRETTY_NAME\"");
+my $os     = cmd_output(q{. /etc/os-release && echo "$PRETTY_NAME"});
 
 # =========================================================
 # DOCKER STATUS

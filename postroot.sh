@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # =========================================================
-# LoxBerry Docker + Portainer Plugin (FINAL SAFE VERSION)
+# LoxBerry Docker + Portainer Plugin
 # =========================================================
 
 set -e
@@ -12,8 +12,11 @@ PSHNAME=$2
 PDIR=$3
 PVERSION=$4
 PTEMPPATH=$6
+PORTAINER_IMAGE=${PORTAINER_IMAGE:-portainer/portainer-ce:lts}
+PORTAINER_DATA=${PORTAINER_DATA:-/opt/portainer}
 
 echo "<INFO> Plugin installiert: $PDIR Version $PVERSION"
+echo "<INFO> Portainer Image: $PORTAINER_IMAGE"
 
 # =========================================================
 # LoxBerry Pfade (nur Info)
@@ -31,7 +34,7 @@ echo "<INFO> Config: $LBPCONFIG/$PDIR"
 # =========================================================
 if ! command -v docker >/dev/null 2>&1; then
 
-    echo "<INFO> Docker nicht gefunden → Installation startet"
+    echo "<INFO> Docker nicht gefunden -> Installation startet"
 
     curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
     sh /tmp/get-docker.sh
@@ -48,60 +51,63 @@ fi
 systemctl enable docker >/dev/null 2>&1 || true
 systemctl start docker >/dev/null 2>&1 || true
 
+if ! docker info >/dev/null 2>&1; then
+    echo "<ERROR> Docker ist installiert, aber der Docker-Daemon ist nicht erreichbar"
+    exit 1
+fi
+
 # =========================================================
-# PORTAINER STATE MACHINE (SAFE LOGIC)
+# PORTAINER STATE MACHINE
 # =========================================================
+container_running() {
+    docker ps --format '{{.Names}}' | grep -Fxq "$1"
+}
 
-PORTAINER_RUNNING=$(docker ps --format '{{.Names}}' | grep -qw portainer && echo "yes" || echo "no")
-PORTAINER_EXISTS=$(docker ps -a --format '{{.Names}}' | grep -qw portainer && echo "yes" || echo "no")
+container_exists() {
+    docker ps -a --format '{{.Names}}' | grep -Fxq "$1"
+}
 
-# ---------------------------------------------------------
-# CASE 1: läuft korrekt
-# ---------------------------------------------------------
-if [ "$PORTAINER_RUNNING" = "yes" ]; then
-
-    echo "<OK> Portainer läuft korrekt"
-
-# ---------------------------------------------------------
-# CASE 2: existiert aber gestoppt → nur starten
-# ---------------------------------------------------------
-elif [ "$PORTAINER_EXISTS" = "yes" ]; then
-
-    echo "<INFO> Portainer existiert → Start"
-
-    docker start portainer >/dev/null 2>&1 || {
-
-        echo "<WARN> Start fehlgeschlagen → kontrollierter Restart"
-
-        docker rm -f portainer >/dev/null 2>&1 || true
-
-        docker pull portainer/portainer-ce:latest
-
-        docker run -d \
-            --name portainer \
-            --restart unless-stopped \
-            -p 9000:9000 \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -v /opt/portainer:/data \
-            portainer/portainer-ce:latest
-    }
-
-# ---------------------------------------------------------
-# CASE 3: nicht vorhanden → neu installieren
-# ---------------------------------------------------------
-else
-
-    echo "<INFO> Portainer nicht vorhanden → Installation"
-
-    docker pull portainer/portainer-ce:latest
+run_portainer() {
+    docker pull "$PORTAINER_IMAGE"
 
     docker run -d \
         --name portainer \
         --restart unless-stopped \
         -p 9000:9000 \
         -v /var/run/docker.sock:/var/run/docker.sock \
-        -v /opt/portainer:/data \
-        portainer/portainer-ce:latest
+        -v "$PORTAINER_DATA":/data \
+        "$PORTAINER_IMAGE"
+}
+
+# ---------------------------------------------------------
+# CASE 1: laeuft korrekt
+# ---------------------------------------------------------
+if container_running portainer; then
+
+    echo "<OK> Portainer laeuft korrekt"
+
+# ---------------------------------------------------------
+# CASE 2: existiert aber gestoppt -> nur starten
+# ---------------------------------------------------------
+elif container_exists portainer; then
+
+    echo "<INFO> Portainer existiert -> Start"
+
+    docker start portainer >/dev/null 2>&1 || {
+
+        echo "<WARN> Start fehlgeschlagen -> kontrollierter Restart"
+
+        docker rm -f portainer >/dev/null 2>&1 || true
+        run_portainer
+    }
+
+# ---------------------------------------------------------
+# CASE 3: nicht vorhanden -> neu installieren
+# ---------------------------------------------------------
+else
+
+    echo "<INFO> Portainer nicht vorhanden -> Installation"
+    run_portainer
 
 fi
 

@@ -1,7 +1,7 @@
 # Changelog
 
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
-## Unreleased (develop)
+## v2.4.0
 
 ### Neu
 - Docker-Diagnose um Daemon-Status, Portainer-Status, Portfreigaben, Docker Compose, APT-Updates und Speicherplatz erweitert
